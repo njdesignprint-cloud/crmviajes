@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vía Clara — CRM para agencias de viajes",
-  description: "Clientes, pagos y recordatorios claros para tu agencia de viajes.",
+  title: "Rumbo CRM — Operación profesional para agencias de viajes",
+  description: "Clientes, cotizaciones, viajes, pagos y seguimiento para agencias de viajes.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
