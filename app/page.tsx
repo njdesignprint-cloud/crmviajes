@@ -34,7 +34,7 @@ export default function Home() {
         </nav>
         <div>
           <Link className="nav-login" href="/admin/">
-            Acceso privado
+            Entrar a mi CRM
           </Link>
           <Link className="nav-cta" href="/dashboard/">
             Ver demo
@@ -236,7 +236,7 @@ export default function Home() {
         <p>Software de gestión para agencias de viajes · Houston, Texas</p>
         <div>
           <a href="#producto">Producto</a>
-          <Link href="/admin/">Acceso privado</Link>
+          <Link href="/admin/">Entrar a mi CRM</Link>
         </div>
       </footer>
     </div>
