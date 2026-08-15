@@ -12,7 +12,7 @@
     "deploy": "npm run build && wrangler deploy --config dist/server/wrangler.json",
     "deploy:cloudflare": "wrangler deploy --config dist/server/wrangler.json",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "lint": "eslint app db worker --ignore-pattern worker-configuration.d.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
