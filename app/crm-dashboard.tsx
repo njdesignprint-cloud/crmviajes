@@ -10,16 +10,16 @@ type Data={clients:Client[];trips:Trip[];payments:Payment[];tasks:Task[];quotes:
 const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
 const shortDate=(v:string)=>new Intl.DateTimeFormat("es-US",{month:"short",day:"numeric",timeZone:"UTC"}).format(new Date(`${v}T12:00:00Z`));
 
-export function CrmDashboard(){
+export function CrmDashboard({demo=false}:{demo?:boolean}){
  const[data,setData]=useState<Data>({clients:[],trips:[],payments:[],tasks:[],quotes:[],activities:[]});const[loading,setLoading]=useState(true);const[section,setSection]=useState("Inicio");const[modal,setModal]=useState<Modal>(null);const[search,setSearch]=useState("");const[saving,setSaving]=useState(false);
- const load=useCallback(async()=>{const r=await fetch("/api/data",{cache:"no-store"});setData(await r.json());setLoading(false)},[]);
+ const load=useCallback(async()=>{const r=await fetch(demo?"/api/demo":"/api/data",{cache:"no-store"});setData(await r.json());setLoading(false)},[demo]);
  // The initial fetch synchronizes this client dashboard with the D1 API.
  // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{void load()},[load]);
  const pending=data.payments.filter(p=>!p.paid_at),dueTotal=pending.reduce((s,p)=>s+Number(p.amount),0),collected=data.payments.filter(p=>p.paid_at).reduce((s,p)=>s+Number(p.amount),0),openTasks=data.tasks.filter(t=>!t.completed);
  const filtered=useMemo(()=>data.clients.filter(c=>`${c.name} ${c.email} ${c.phone} ${c.destination}`.toLowerCase().includes(search.toLowerCase())),[data.clients,search]);
- async function submit(action:string,values:Record<string,FormDataEntryValue>){setSaving(true);await post(action,values);await load();setSaving(false);setModal(null)}
- async function post(action:string,values:Record<string,unknown>){await fetch("/api/data",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action,...values})})}
+ async function submit(action:string,values:Record<string,FormDataEntryValue>){if(demo){window.alert("Esta es una demostración de solo lectura. Inicia sesión para guardar información real.");setModal(null);return}setSaving(true);await post(action,values);await load();setSaving(false);setModal(null)}
+ async function post(action:string,values:Record<string,unknown>){if(demo){window.alert("Acción disponible en el CRM privado.");return}await fetch("/api/data",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action,...values})})}
  async function quick(action:string,values:Record<string,unknown>){await post(action,values);await load()}
  const sales=data.trips.reduce((s,t)=>s+Number(t.total),0),quoteTotal=data.quotes.reduce((s,q)=>s+Number(q.total),0),conversion=data.quotes.length?Math.round(data.quotes.filter(q=>q.status==="Aceptada").length/data.quotes.length*100):0;
  return <div className="app-shell"><aside className="sidebar"><div className="brand"><span className="brand-mark">R</span><div><strong>Rumbo</strong><small>Travel CRM · Houston</small></div></div><nav>{["Inicio","Clientes","Cotizaciones","Viajes","Pagos","Tareas","Actividad","Reportes"].map((item,i)=><button key={item} className={section===item?"active":""} onClick={()=>setSection(item)}><span>{["⌂","◎","▤","✦","$","✓","◷","↗"][i]}</span>{item}</button>)}</nav><div className="sidebar-foot"><div className="avatar">ND</div><div><strong>Noel Díaz</strong><small>Administrador</small></div><span className="online">●</span></div></aside>
