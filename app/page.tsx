@@ -1,9 +1,244 @@
 import Link from "next/link";
-const features=[["01","Clientes que no se enfrían","Cada llamada, destino y próximo paso permanece visible para todo el equipo."],["02","Cotizaciones que avanzan","Organiza oportunidades desde borrador hasta aceptación y conoce el valor de tu pipeline."],["03","Cobros bajo control","Visualiza anticipos, cuotas, saldos y fechas límite sin depender de hojas de cálculo."]];
-export default function Home(){return <div className="marketing"><header className="marketing-nav"><Link className="marketing-brand" href="/"><span>R</span><div><strong>Rumbo</strong><small>TRAVEL CRM</small></div></Link><nav><a href="#producto">Producto</a><a href="#beneficios">Beneficios</a><a href="#precio">Precio</a></nav><div><Link className="nav-login" href="/login">Iniciar sesión</Link><Link className="nav-cta" href="/dashboard">Ver demo</Link></div></header><main className="marketing-main">
-<section className="landing-hero"><div className="hero-copy"><p className="landing-kicker"><span/>CREADO PARA AGENCIAS DE VIAJES</p><h1>Más viajes vendidos.<br/><em>Menos cosas olvidadas.</em></h1><p className="hero-lead">Rumbo reúne clientes, cotizaciones, pagos y seguimientos en un CRM sencillo que tu agencia sí querrá usar.</p><div className="hero-buttons"><Link className="landing-primary" href="/dashboard">Explorar el CRM <b>→</b></Link><a className="landing-secondary" href="#producto">Conocer el producto</a></div><div className="trust-row"><span>✓ Sin instalación</span><span>✓ Funciona en español</span><span>✓ Diseñado en Houston</span></div></div><div className="product-preview" id="producto"><div className="preview-bar"><div className="preview-logo">R</div><span>Resumen de hoy</span><i/><i/><i/></div><div className="preview-body"><div className="preview-sidebar"><b/><b/><b/><b/></div><div className="preview-content"><p>BUENOS DÍAS, NOEL</p><h3>Tu agencia, en una sola vista.</h3><div className="preview-metrics"><article><small>POR COBRAR</small><strong>$4,490</strong><span>3 pagos pendientes</span></article><article><small>VENTAS ACTIVAS</small><strong>$13,770</strong><span>3 viajes</span></article><article><small>CONVERSIÓN</small><strong>42%</strong><span>Este mes</span></article></div><div className="preview-panels"><article><b>Próximos cobros</b><p><span>16 AGO</span> Familia Ramírez <strong>$1,840</strong></p><p><span>20 AGO</span> María González <strong>$2,650</strong></p></article><article><b>Tareas pendientes</b><p>○ Seguimiento Costa Rica</p><p>○ Confirmar segunda cuota</p></article></div></div></div></div></section>
-<section className="social-proof"><p>MENOS ADMINISTRACIÓN. MÁS TIEMPO PARA VENDER EXPERIENCIAS.</p><div><strong>Clientes</strong><strong>Cotizaciones</strong><strong>Viajes</strong><strong>Pagos</strong><strong>Seguimientos</strong></div></section>
-<section className="benefits" id="beneficios"><div className="section-intro"><p>TODO EN SU LUGAR</p><h2>La claridad que necesita<br/>una agencia que está creciendo.</h2></div><div className="feature-grid">{features.map(([n,title,text])=><article key={n}><span>{n}</span><div className={`feature-art art-${n}`}><i/><i/><i/></div><h3>{title}</h3><p>{text}</p></article>)}</div></section>
-<section className="workflow"><div><p>DE CONSULTA A VIAJE CONFIRMADO</p><h2>Una operación comercial que fluye.</h2><span>Convierte el interés en una cotización, la cotización en un viaje y cada fecha de pago en una tarea clara.</span><Link href="/dashboard">Ver cómo funciona →</Link></div><ol><li><b>01</b><strong>Registra al cliente</strong><span>Contacto, interés y etapa comercial.</span></li><li><b>02</b><strong>Prepara la propuesta</strong><span>Viajeros, servicios, impuestos y vigencia.</span></li><li><b>03</b><strong>Controla la operación</strong><span>Viaje, cuotas, tareas y actividad.</span></li></ol></section>
-<section className="pricing" id="precio"><div><p>EMPIEZA SIMPLE</p><h2>Todo lo necesario para organizar tu agencia.</h2><span>La versión inicial está abierta como demostración mientras terminamos cuentas de usuario, seguridad y automatizaciones.</span></div><article><small>ACCESO DE DEMOSTRACIÓN</small><h3>$0 <span>/ durante desarrollo</span></h3><ul><li>✓ Clientes y seguimiento</li><li>✓ Cotizaciones y pipeline</li><li>✓ Viajes, pagos y tareas</li><li>✓ Reportes comerciales</li></ul><Link href="/dashboard">Abrir Rumbo CRM →</Link></article></section>
-<section className="final-cta"><span className="brand-orbit">R</span><p>EL PRÓXIMO VIAJE COMIENZA AQUÍ</p><h2>Haz crecer tu agencia<br/>sin perder el rumbo.</h2><Link href="/dashboard">Explorar el CRM <b>→</b></Link></section></main><footer className="marketing-footer"><div className="marketing-brand"><span>R</span><div><strong>Rumbo</strong><small>TRAVEL CRM</small></div></div><p>Software de gestión para agencias de viajes · Houston, Texas</p><div><a href="#producto">Producto</a><Link href="/login">Acceso</Link></div></footer></div>}
+const features = [
+  [
+    "01",
+    "Clientes que no se enfrían",
+    "Cada llamada, destino y próximo paso permanece visible para todo el equipo.",
+  ],
+  [
+    "02",
+    "Cotizaciones que avanzan",
+    "Organiza oportunidades desde borrador hasta aceptación y conoce el valor de tu pipeline.",
+  ],
+  [
+    "03",
+    "Cobros bajo control",
+    "Visualiza anticipos, cuotas, saldos y fechas límite sin depender de hojas de cálculo.",
+  ],
+];
+export default function Home() {
+  return (
+    <div className="marketing">
+      <header className="marketing-nav">
+        <Link className="marketing-brand" href="/">
+          <span>R</span>
+          <div>
+            <strong>Rumbo</strong>
+            <small>TRAVEL CRM</small>
+          </div>
+        </Link>
+        <nav>
+          <a href="#producto">Producto</a>
+          <a href="#beneficios">Beneficios</a>
+          <a href="#precio">Precio</a>
+        </nav>
+        <div>
+          <Link className="nav-login" href="/admin/">
+            Acceso privado
+          </Link>
+          <Link className="nav-cta" href="/dashboard/">
+            Ver demo
+          </Link>
+        </div>
+      </header>
+      <main className="marketing-main">
+        <section className="landing-hero">
+          <div className="hero-copy">
+            <p className="landing-kicker">
+              <span />
+              CREADO PARA AGENCIAS DE VIAJES
+            </p>
+            <h1>
+              Más viajes vendidos.
+              <br />
+              <em>Menos cosas olvidadas.</em>
+            </h1>
+            <p className="hero-lead">
+              Rumbo reúne clientes, cotizaciones, pagos y seguimientos en un CRM
+              sencillo que tu agencia sí querrá usar.
+            </p>
+            <div className="hero-buttons">
+              <Link className="landing-primary" href="/dashboard/">
+                Probar la demo <b>→</b>
+              </Link>
+              <a className="landing-secondary" href="#producto">
+                Conocer el producto
+              </a>
+            </div>
+            <div className="trust-row">
+              <span>✓ Sin instalación</span>
+              <span>✓ Funciona en español</span>
+              <span>✓ Diseñado en Houston</span>
+            </div>
+          </div>
+          <div className="product-preview" id="producto">
+            <div className="preview-bar">
+              <div className="preview-logo">R</div>
+              <span>Resumen de hoy</span>
+              <i />
+              <i />
+              <i />
+            </div>
+            <div className="preview-body">
+              <div className="preview-sidebar">
+                <b />
+                <b />
+                <b />
+                <b />
+              </div>
+              <div className="preview-content">
+                <p>BUENOS DÍAS, NOEL</p>
+                <h3>Tu agencia, en una sola vista.</h3>
+                <div className="preview-metrics">
+                  <article>
+                    <small>POR COBRAR</small>
+                    <strong>$4,490</strong>
+                    <span>3 pagos pendientes</span>
+                  </article>
+                  <article>
+                    <small>VENTAS ACTIVAS</small>
+                    <strong>$13,770</strong>
+                    <span>3 viajes</span>
+                  </article>
+                  <article>
+                    <small>CONVERSIÓN</small>
+                    <strong>42%</strong>
+                    <span>Este mes</span>
+                  </article>
+                </div>
+                <div className="preview-panels">
+                  <article>
+                    <b>Próximos cobros</b>
+                    <p>
+                      <span>16 AGO</span> Familia Ramírez{" "}
+                      <strong>$1,840</strong>
+                    </p>
+                    <p>
+                      <span>20 AGO</span> María González <strong>$2,650</strong>
+                    </p>
+                  </article>
+                  <article>
+                    <b>Tareas pendientes</b>
+                    <p>○ Seguimiento Costa Rica</p>
+                    <p>○ Confirmar segunda cuota</p>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="social-proof">
+          <p>MENOS ADMINISTRACIÓN. MÁS TIEMPO PARA VENDER EXPERIENCIAS.</p>
+          <div>
+            <strong>Clientes</strong>
+            <strong>Cotizaciones</strong>
+            <strong>Viajes</strong>
+            <strong>Pagos</strong>
+            <strong>Seguimientos</strong>
+          </div>
+        </section>
+        <section className="benefits" id="beneficios">
+          <div className="section-intro">
+            <p>TODO EN SU LUGAR</p>
+            <h2>
+              La claridad que necesita
+              <br />
+              una agencia que está creciendo.
+            </h2>
+          </div>
+          <div className="feature-grid">
+            {features.map(([n, title, text]) => (
+              <article key={n}>
+                <span>{n}</span>
+                <div className={`feature-art art-${n}`}>
+                  <i />
+                  <i />
+                  <i />
+                </div>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="workflow">
+          <div>
+            <p>DE CONSULTA A VIAJE CONFIRMADO</p>
+            <h2>Una operación comercial que fluye.</h2>
+            <span>
+              Convierte el interés en una cotización, la cotización en un viaje
+              y cada fecha de pago en una tarea clara.
+            </span>
+            <Link href="/dashboard/">Ver cómo funciona →</Link>
+          </div>
+          <ol>
+            <li>
+              <b>01</b>
+              <strong>Registra al cliente</strong>
+              <span>Contacto, interés y etapa comercial.</span>
+            </li>
+            <li>
+              <b>02</b>
+              <strong>Prepara la propuesta</strong>
+              <span>Viajeros, servicios, impuestos y vigencia.</span>
+            </li>
+            <li>
+              <b>03</b>
+              <strong>Controla la operación</strong>
+              <span>Viaje, cuotas, tareas y actividad.</span>
+            </li>
+          </ol>
+        </section>
+        <section className="pricing" id="precio">
+          <div>
+            <p>EMPIEZA SIMPLE</p>
+            <h2>Todo lo necesario para organizar tu agencia.</h2>
+            <span>
+              La versión inicial está abierta como demostración mientras
+              terminamos cuentas de usuario, seguridad y automatizaciones.
+            </span>
+          </div>
+          <article>
+            <small>ACCESO DE DEMOSTRACIÓN</small>
+            <h3>
+              $0 <span>/ durante desarrollo</span>
+            </h3>
+            <ul>
+              <li>✓ Clientes y seguimiento</li>
+              <li>✓ Cotizaciones y pipeline</li>
+              <li>✓ Viajes, pagos y tareas</li>
+              <li>✓ Reportes comerciales</li>
+            </ul>
+            <Link href="/dashboard/">Abrir la demo →</Link>
+          </article>
+        </section>
+        <section className="final-cta">
+          <span className="brand-orbit">R</span>
+          <p>EL PRÓXIMO VIAJE COMIENZA AQUÍ</p>
+          <h2>
+            Haz crecer tu agencia
+            <br />
+            sin perder el rumbo.
+          </h2>
+          <Link href="/dashboard/">
+            Explorar el CRM <b>→</b>
+          </Link>
+        </section>
+      </main>
+      <footer className="marketing-footer">
+        <div className="marketing-brand">
+          <span>R</span>
+          <div>
+            <strong>Rumbo</strong>
+            <small>TRAVEL CRM</small>
+          </div>
+        </div>
+        <p>Software de gestión para agencias de viajes · Houston, Texas</p>
+        <div>
+          <a href="#producto">Producto</a>
+          <Link href="/admin/">Acceso privado</Link>
+        </div>
+      </footer>
+    </div>
+  );
+}
