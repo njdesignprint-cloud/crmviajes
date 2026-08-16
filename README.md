@@ -1,8 +1,17 @@
-# vinext-starter
+# TravelClientPro
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+CRM en español para agencias de viajes: clientes, cotizaciones, viajes,
+calendario de cobros, tareas, actividad comercial y reportes operativos.
+
+Incluye cotizaciones por partidas, viajeros, proveedores, reservas y control de
+comisiones, con aislamiento de datos por agencia y auditoría de escrituras.
+Las propuestas pueden compartirse mediante enlaces con tokens almacenados como
+hash y aceptarse desde un portal limitado para el cliente.
+Una propuesta aceptada puede convertirse en viaje con fechas, primer pago,
+actividad y tarea de seguimiento; el portal ofrece una salida limpia para PDF.
+Un proceso diario crea recordatorios idempotentes de cobros y viajes. Los roles
+de propietario, administrador, agente y solo lectura controlan el acceso del equipo.
+Los expedientes de clientes pueden editarse o archivarse sin eliminar su historial.
 
 ## Prerequisites
 
@@ -16,16 +25,18 @@ npm run dev
 npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+La aplicación corre sobre vinext y Cloudflare Workers con persistencia en D1.
 
-## Included Shape
+## Estructura
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+- `app/`: producto, demo pública y API privada.
+- `db/schema.ts`: esquema relacional Drizzle.
+- `drizzle/`: migraciones D1 versionadas.
+- `worker/`: entrada de Cloudflare Worker.
+- `tests/`: contratos de seguridad y datos del CRM.
+
+La demo pública vive en `/dashboard/`. El CRM real vive en `/admin/` y exige
+identidad de Sign in with ChatGPT tanto en la página como en `/api/data`.
 
 ## Workspace Auth Headers
 
@@ -88,9 +99,14 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 ## Useful Commands
 
 - `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
+- `npm run check`: lint, typecheck, build and run all CRM contract tests
+- `npm run build`: verify the vinext production output
+- `npm test`: build and run CRM security/data contract tests
 - `npm run db:generate`: generate Drizzle migrations after schema changes
+- `npm run db:migrate:local`: apply pending migrations to local D1
+- `npm run db:migrate:remote`: apply pending migrations to remote D1
+
+See `docs/production-runbook.md` before applying remote migrations or deploying.
 
 ## Learn More
 

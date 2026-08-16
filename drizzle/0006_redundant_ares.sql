@@ -1,0 +1,1 @@
+ALTER TABLE `quotes` ADD `converted_trip_id` integer;

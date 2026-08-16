@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Rumbo CRM — Operación profesional para agencias de viajes",
+  metadataBase: new URL("https://travelclientpro.com"),
+  applicationName: "TravelClientPro",
+  title: "TravelClientPro — Operación profesional para agencias de viajes",
   description: "Clientes, cotizaciones, viajes, pagos y seguimiento para agencias de viajes.",
+  alternates: { canonical: "/" },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/favicon.svg?v=2",
+    shortcut: "/favicon.svg?v=2",
   },
 };
 
@@ -28,11 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <body>{children}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer /></body>
     </html>
   );
 }

@@ -4,15 +4,28 @@
   "main": "./worker/index.ts",
   "compatibility_date": "2026-08-14",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "SUPERADMIN_EMAIL": "njdesignprint@gmail.com",
+    "EMAIL_FROM": "TravelClientPro <access@travelclientpro.com>",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAERG8lemPlsfpNBA"
+  },
+  "routes": [
+    { "pattern": "travelclientpro.com", "custom_domain": true },
+    { "pattern": "www.travelclientpro.com", "custom_domain": true }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "via-clara-crm-db",
-      "database_id": "4f2e32d1-c17a-4f21-a5df-8899e2a74bed"
+      "database_id": "4f2e32d1-c17a-4f21-a5df-8899e2a74bed",
+      "migrations_dir": "drizzle"
     }
   ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
+  },
+  "triggers": {
+    "crons": ["15 13 * * *"]
   }
 }
