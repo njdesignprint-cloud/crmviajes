@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 type Client = {
   id: number;
   name: string;
@@ -52,6 +52,8 @@ type Quote = {
   valid_until: string;
   created_at: string;
   notes: string;
+  item_count?: number;
+  converted_trip_id?: number | null;
 };
 type Activity = {
   id: number;
@@ -61,6 +63,10 @@ type Activity = {
   detail: string;
   created_at: string;
 };
+type Traveler = { id:number; client_id:number; client_name:string; first_name:string; last_name:string; birth_date:string; nationality:string; notes:string };
+type Supplier = { id:number; name:string; category:string; contact_name:string; email:string; phone:string; notes:string };
+type Booking = { id:number; trip_id:number; supplier_id:number; client_name:string; destination:string; supplier_name:string; service_type:string; confirmation:string; sale_amount:number; cost_amount:number; commission_amount:number; commission_due_date:string; commission_received_at:string|null; status:string };
+type Member = { id:number; email:string; display_name:string; role:string; active:number; created_at:string };
 type Data = {
   clients: Client[];
   trips: Trip[];
@@ -68,9 +74,14 @@ type Data = {
   tasks: Task[];
   quotes: Quote[];
   activities: Activity[];
+  travelers: Traveler[];
+  suppliers: Supplier[];
+  bookings: Booking[];
+  members: Member[];
+  user?: { email: string; displayName: string; role: string };
 };
 type Modal =
-  "client" | "trip" | "quote" | "payment" | "task" | "activity" | null;
+  "client" | "editClient" | "archiveClient" | "trip" | "quote" | "payment" | "task" | "activity" | "traveler" | "supplier" | "booking" | "convertQuote" | "member" | null;
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -91,18 +102,40 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
     tasks: [],
     quotes: [],
     activities: [],
+    travelers: [],
+    suppliers: [],
+    bookings: [],
+    members: [],
   });
   const [loading, setLoading] = useState(true);
   const [section, setSection] = useState("Inicio");
   const [modal, setModal] = useState<Modal>(null);
+  const [selectedQuoteId, setSelectedQuoteId] = useState<number | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const load = useCallback(async () => {
-    const r = await fetch(demo ? "/api/demo" : "/api/data", {
-      cache: "no-store",
-    });
-    setData(await r.json());
-    setLoading(false);
+    try {
+      const r = await fetch(demo ? "/api/demo" : "/api/data", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const payload = await r.json() as Data & { error?: string };
+      if (!r.ok) throw new Error(payload.error || "No se pudo cargar el CRM.");
+      setData(payload);
+      setError(null);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "";
+      setError(
+        message === "Failed to fetch"
+          ? "La sesión segura no llegó a la API. Recarga la página para renovar el acceso."
+          : message || "No se pudo cargar el CRM.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [demo]);
   // The initial fetch synchronizes this client dashboard with the D1 API.
   useEffect(() => {
@@ -129,32 +162,43 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
     values: Record<string, FormDataEntryValue>,
   ) {
     if (demo) {
-      window.alert(
-        "Esta es una demostración de solo lectura. Inicia sesión para guardar información real.",
-      );
+      setNotice("Esta demostración es de solo lectura. Inicia sesión para guardar información real.");
       setModal(null);
       return;
     }
     setSaving(true);
-    await post(action, values);
-    await load();
-    setSaving(false);
-    setModal(null);
+    try {
+      await post(action, values);
+      await load();
+      setModal(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo guardar.");
+    } finally {
+      setSaving(false);
+    }
   }
   async function post(action: string, values: Record<string, unknown>) {
     if (demo) {
-      window.alert("Acción disponible en el CRM privado.");
+      setNotice("Esta acción está disponible en el CRM privado.");
       return;
     }
-    await fetch("/api/data", {
+    const response = await fetch("/api/data", {
       method: "POST",
+      credentials: "include",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action, ...values }),
     });
+    const payload = await response.json() as Record<string, unknown> & { error?: string };
+    if (!response.ok) throw new Error(payload.error || "No se pudo guardar.");
+    return payload as Record<string, unknown>;
   }
   async function quick(action: string, values: Record<string, unknown>) {
-    await post(action, values);
-    await load();
+    try {
+      await post(action, values);
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo guardar.");
+    }
   }
   const sales = data.trips.reduce((s, t) => s + Number(t.total), 0),
     quoteTotal = data.quotes.reduce((s, q) => s + Number(q.total), 0),
@@ -165,18 +209,73 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
             100,
         )
       : 0;
+  const expectedCommission = data.bookings.reduce((sum, booking) => sum + Number(booking.commission_amount), 0);
+  const receivedCommission = data.bookings.filter((booking) => booking.commission_received_at).reduce((sum, booking) => sum + Number(booking.commission_amount), 0);
+  const displayName = data.user?.displayName || (demo ? "Noel Díaz" : "Mi cuenta");
+  const canWrite = demo || data.user?.role !== "viewer";
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "R";
+  const todayLabel = new Intl.DateTimeFormat("es-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date()).toUpperCase();
+  function navigateTo(nextSection: string) {
+    setModal(null);
+    setSelectedClient(null);
+    setSelectedQuoteId(null);
+    setSection(nextSection);
+  }
+  function exportReport() {
+    const rows = [
+      ["Indicador", "Valor"],
+      ["Clientes", data.clients.length],
+      ["Viajes", data.trips.length],
+      ["Ventas activas", sales],
+      ["Cobrado", collected],
+      ["Por cobrar", dueTotal],
+      ["Cotizaciones", data.quotes.length],
+      ["Conversión", `${conversion}%`],
+      ["Comisión esperada", expectedCommission],
+      ["Comisión recibida", receivedCommission],
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
+    link.download = `travelclientpro-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+  async function shareQuote(id: number) {
+    try {
+      const payload = await post("shareQuote", { id });
+      if (!payload || typeof payload.path !== "string") return;
+      const url = `${window.location.origin}${payload.path}`;
+      await navigator.clipboard.writeText(url);
+      setError(null);
+      setNotice("Enlace seguro copiado. Ya puedes enviarlo al cliente.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo crear el enlace.");
+    }
+  }
   return (
     <>
       {demo && (
         <div className="demo-topbar">
           <div>
+            <b className="demo-brand">T</b>
             <strong>Estás explorando la demo</strong>
             <span>Los datos son ficticios y no se guardan.</span>
           </div>
           <nav aria-label="Opciones de la demo">
             <Link href="/">← Salir de la demo</Link>
-            <Link className="demo-login" href="/admin/">
-              Entrar al CRM privado →
+            <Link className="demo-login" href="/registro/">
+              Crear mi cuenta real →
             </Link>
           </nav>
         </div>
@@ -184,10 +283,10 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
       <div className={`app-shell ${demo ? "with-demo-bar" : ""}`}>
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark">R</span>
+          <span className="brand-mark">T</span>
           <div>
-            <strong>Rumbo</strong>
-            <small>Travel CRM · Houston</small>
+            <strong>TravelClientPro</strong>
+            <small>Travel Business Platform</small>
           </div>
         </div>
         <nav>
@@ -198,32 +297,61 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
             "Viajes",
             "Pagos",
             "Tareas",
+            "Operación",
             "Actividad",
+            "Equipo",
             "Reportes",
           ].map((item, i) => (
             <button
               key={item}
               className={section === item ? "active" : ""}
-              onClick={() => setSection(item)}
+              onClick={() => navigateTo(item)}
             >
-              <span>{["⌂", "◎", "▤", "✦", "$", "✓", "◷", "↗"][i]}</span>
+              <span>{["⌂", "◎", "▤", "✦", "$", "✓", "◆", "◷", "♙", "↗"][i]}</span>
               {item}
             </button>
           ))}
         </nav>
         <div className="sidebar-foot">
-          <div className="avatar">ND</div>
+          <div className="avatar">{initials}</div>
           <div>
-            <strong>Noel Díaz</strong>
-            <small>Administrador</small>
+            <strong>{displayName}</strong>
+            <small>{data.user?.role === "owner" ? "Propietario" : data.user?.role || "Demostración"}</small>
           </div>
           <span className="online">●</span>
         </div>
+        {!demo && <Link className="account-link" href="/mi-cuenta/">Plan y cuenta →</Link>}
       </aside>
       <main>
+        {error && (
+          <div className="error-banner" role="alert">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} aria-label="Cerrar aviso">×</button>
+          </div>
+        )}
+        {notice && (
+          <div className="notice-banner" role="status">
+            <span>{notice}</span>
+            <button onClick={() => setNotice(null)} aria-label="Cerrar aviso">×</button>
+          </div>
+        )}
+        {modal ? (
+          <ModalForm
+            type={modal}
+            clients={data.clients}
+            trips={data.trips}
+            suppliers={data.suppliers}
+            quoteId={selectedQuoteId}
+            selectedClient={selectedClient}
+            saving={saving}
+            close={() => setModal(null)}
+            submit={submit}
+          />
+        ) : (
+        <>
         <header className="topbar">
           <div>
-            <p className="eyebrow">VIERNES, 14 DE AGOSTO</p>
+            <p className="eyebrow">{todayLabel}</p>
             <h1>{section}</h1>
           </div>
           <div className="top-actions">
@@ -239,9 +367,9 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
             <button className="notification" aria-label="Notificaciones">
               ◦
             </button>
-            <button className="primary" onClick={() => setModal("client")}>
+            {canWrite && (section === "Inicio" || section === "Clientes") && <button className="primary" onClick={() => setModal("client")}>
               ＋ Nuevo cliente
-            </button>
+            </button>}
           </div>
         </header>
         {loading ? (
@@ -251,7 +379,7 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
             <section className="hero-row">
               <div>
                 <p className="eyebrow coral">RESUMEN DE HOY</p>
-                <h2>Buenos días, Noel.</h2>
+                <h2>Buenos días, {displayName.split(" ")[0]}.</h2>
                 <p>
                   Tienes <strong>{openTasks.length} pendientes</strong> y{" "}
                   <strong>{pending.length} cobros</strong> que requieren
@@ -406,6 +534,7 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
                   </div>
                   <span>{c.destination}</span>
                   <span className="status confirmado">{c.status}</span>
+                  {canWrite&&<div className="row-actions"><button className="mini-button" onClick={()=>{setSelectedClient(c);setModal("editClient");}}>Editar</button><button className="mini-button danger" onClick={()=>{setSelectedClient(c);setModal("archiveClient");}}>Archivar</button></div>}
                 </div>
               ))}
             </div>
@@ -429,11 +558,14 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
                         {q.client_name} · {q.destination}
                       </strong>
                       <small>
-                        {q.travelers} viajeros · válida hasta{" "}
+                        {q.travelers} viajeros · {q.item_count || 0} partidas · válida hasta{" "}
                         {shortDate(q.valid_until)}
                       </small>
                     </div>
                     <strong>{money.format(q.total)}</strong>
+                    <button className="mini-button" onClick={() => shareQuote(q.id)}>Compartir</button>
+                    {q.status === "Aceptada" && !q.converted_trip_id && <button className="mini-button" onClick={() => {setSelectedQuoteId(q.id);setModal("convertQuote");}}>Crear viaje</button>}
+                    {q.converted_trip_id && <span className="status confirmado">Viaje creado</span>}
                     <select
                       aria-label={`Estado de cotización ${q.id}`}
                       value={q.status}
@@ -546,6 +678,37 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
               ))}
             </div>
           </ListPage>
+        ) : section === "Operación" ? (
+          <ListPage
+            title="Operación y comisiones"
+            description={`${money.format(expectedCommission - receivedCommission)} en comisiones pendientes.`}
+            action="Nueva reserva"
+            onAction={() => setModal("booking")}
+          >
+            <div className="operation-actions">
+              <button className="mini-button" onClick={() => setModal("supplier")}>＋ Proveedor</button>
+              <button className="mini-button" onClick={() => setModal("traveler")}>＋ Viajero</button>
+            </div>
+            <section className="metrics reports">
+              <Metric label="Comisión esperada" value={money.format(expectedCommission)} note={`${data.bookings.length} reservas`} tone="sand" />
+              <Metric label="Comisión recibida" value={money.format(receivedCommission)} note="Ingresos confirmados" tone="green" />
+              <Metric label="Proveedores" value={String(data.suppliers.length)} note="Directorio operativo" tone="blue" />
+              <Metric label="Viajeros" value={String(data.travelers.length)} note="Perfiles registrados" tone="coral" />
+            </section>
+            <div className="table-list">
+              {data.bookings.length ? data.bookings.map((booking) => (
+                <div className="client-line" key={booking.id}>
+                  <div className="trip-icon small">{booking.service_type[0]}</div>
+                  <div className="grow">
+                    <strong>{booking.client_name} · {booking.service_type}</strong>
+                    <small>{booking.supplier_name} · {booking.destination}{booking.confirmation ? ` · ${booking.confirmation}` : ""}</small>
+                  </div>
+                  <div><strong>{money.format(booking.commission_amount)}</strong><small> comisión</small></div>
+                  {booking.commission_received_at ? <span className="status confirmado">Recibida</span> : <button className="mini-button" onClick={() => quick("receiveCommission", {id:booking.id})}>Registrar comisión</button>}
+                </div>
+              )) : <Empty text="Registra proveedores y reservas para controlar tus comisiones." />}
+            </div>
+          </ListPage>
         ) : section === "Actividad" ? (
           <ListPage
             title="Actividad"
@@ -572,10 +735,23 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
               )}
             </div>
           </ListPage>
+        ) : section === "Equipo" ? (
+          <ListPage title="Equipo" description="Administra quién puede entrar al CRM y qué permisos tiene cada persona." action={demo||data.user?.role==="owner"||data.user?.role==="admin"?"Agregar usuario":undefined} onAction={()=>setModal("member")}>
+            <div className="table-list">
+              {data.members.length ? data.members.map(member=><div className={`client-line ${member.active?"":"done"}`} key={member.id}>
+                <div className="client-avatar">{(member.display_name||member.email).slice(0,2).toUpperCase()}</div>
+                <div className="grow"><strong>{member.display_name||member.email}</strong><small>{member.email}</small></div>
+                <span className="status confirmado">{member.role}</span>
+                {member.email!==data.user?.email&&member.role!=="owner"&&<button className="mini-button" onClick={()=>quick("memberStatus",{id:member.id,active:!member.active})}>{member.active?"Desactivar":"Activar"}</button>}
+              </div>) : <Empty text="La administración del equipo está disponible para propietarios y administradores." />}
+            </div>
+          </ListPage>
         ) : (
           <ListPage
             title="Reportes"
             description="Indicadores comerciales y financieros en tiempo real."
+            action="Exportar CSV"
+            onAction={exportReport}
           >
             <section className="metrics reports">
               <Metric
@@ -608,22 +784,15 @@ export function CrmDashboard({ demo = false }: { demo?: boolean }) {
               <p>
                 Tu agencia administra {data.clients.length} clientes,{" "}
                 {data.trips.length} viajes y {data.quotes.length} oportunidades
-                comerciales.
+                comerciales. Hay {money.format(expectedCommission - receivedCommission)} en
+                comisiones pendientes de recibir.
               </p>
             </div>
           </ListPage>
         )}
+        </>
+        )}
       </main>
-      {modal && (
-        <ModalForm
-          type={modal}
-          clients={data.clients}
-          trips={data.trips}
-          saving={saving}
-          close={() => setModal(null)}
-          submit={submit}
-        />
-      )}
       </div>
     </>
   );
@@ -716,6 +885,9 @@ function ModalForm({
   type,
   clients,
   trips,
+  suppliers,
+  quoteId,
+  selectedClient,
   saving,
   close,
   submit,
@@ -723,37 +895,61 @@ function ModalForm({
   type: Exclude<Modal, null>;
   clients: Client[];
   trips: Trip[];
+  suppliers: Supplier[];
+  quoteId: number | null;
+  selectedClient: Client | null;
   saving: boolean;
   close: () => void;
   submit: (a: string, v: Record<string, FormDataEntryValue>) => void;
 }) {
+  const [items, setItems] = useState([{ category: "Hotel", description: "", quantity: 1, unitPrice: 0 }]);
   const send = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    submit(type, Object.fromEntries(new FormData(e.currentTarget)));
+    const values = Object.fromEntries(new FormData(e.currentTarget));
+    if (type === "quote") values.items = JSON.stringify(items);
+    submit(type, values);
   };
   const titles = {
     client: "Agregar cliente",
+    editClient: "Editar cliente",
+    archiveClient: "Archivar cliente",
     trip: "Crear viaje",
     quote: "Nueva cotización",
     payment: "Agregar pago",
     task: "Agregar tarea",
     activity: "Registrar actividad",
+    traveler: "Agregar viajero",
+    supplier: "Agregar proveedor",
+    booking: "Registrar reserva",
+    convertQuote: "Convertir en viaje",
+    member: "Agregar usuario",
+  };
+  const descriptions = {
+    client: "Crea la ficha comercial de una persona interesada en viajar.",
+    editClient: "Actualiza los datos de contacto y la etapa comercial del cliente.",
+    archiveClient: "Retira al cliente de la lista activa sin eliminar su historial.",
+    trip: "Registra un viaje vendido con sus fechas y valor total.",
+    quote: "Prepara una propuesta detallada que podrás compartir con el cliente.",
+    payment: "Programa un cobro asociado a uno de los viajes de la agencia.",
+    task: "Crea un recordatorio de seguimiento para el equipo.",
+    activity: "Guarda una llamada, mensaje, correo o nota en el historial del cliente.",
+    traveler: "Registra los datos de una persona que participará en el viaje.",
+    supplier: "Añade una empresa de hotel, vuelo, tour u otro servicio.",
+    booking: "Controla una reserva, su costo, venta, confirmación y comisión.",
+    convertQuote: "Convierte una propuesta aceptada en un viaje operativo.",
+    member: "Autoriza a otra persona para trabajar dentro del CRM de la agencia.",
   };
   return (
-    <div
-      className="modal-backdrop"
-      onMouseDown={(e) => {
-        if (e.currentTarget === e.target) close();
-      }}
-    >
-      <form className="modal" onSubmit={send}>
-        <div className="modal-head">
+    <section className="form-page">
+      <form className="form-page-card" onSubmit={send}>
+        <div className="form-page-head">
           <div>
-            <p className="eyebrow coral">RUMBO CRM</p>
+            <p className="eyebrow coral">TRAVELCLIENTPRO</p>
             <h2>{titles[type]}</h2>
+            <p className="form-page-description">{descriptions[type]}</p>
           </div>
-          <button type="button" onClick={close}>
-            ×
+          <button type="button" className="secondary" onClick={close}>
+            ← Volver
           </button>
         </div>
         {type === "client" && (
@@ -773,6 +969,7 @@ function ModalForm({
                   <option>Apartado</option>
                   <option>Confirmado</option>
                 </select>
+                <FieldHint>Selecciona el punto actual del proceso de venta.</FieldHint>
               </label>
             </div>
           </>
@@ -795,20 +992,20 @@ function ModalForm({
               <Field label="Destino" name="destination" required />
               <Field label="Viajeros" name="travelers" type="number" required />
             </div>
-            <div className="form-grid">
-              <Field
-                label="Servicios (USD)"
-                name="subtotal"
-                type="number"
-                required
-              />
-              <Field
-                label="Impuestos (USD)"
-                name="taxes"
-                type="number"
-                required
-              />
+            <div className="quote-builder">
+              <p className="field-section-help">Agrega cada servicio por separado: categoría, descripción, cantidad y precio unitario.</p>
+              <div className="quote-builder-head"><strong>Partidas</strong><button type="button" className="mini-button" onClick={()=>setItems([...items,{category:"Otro",description:"",quantity:1,unitPrice:0}])}>＋ Agregar</button></div>
+              {items.map((item,index)=><div className="quote-item" key={index}>
+                <select aria-label={`Categoría ${index+1}`} value={item.category} onChange={(e)=>setItems(items.map((current,i)=>i===index?{...current,category:e.target.value}:current))}><option>Hotel</option><option>Vuelo</option><option>Tour</option><option>Crucero</option><option>Transporte</option><option>Seguro</option><option>Honorarios</option><option>Otro</option></select>
+                <input aria-label={`Descripción ${index+1}`} placeholder="Descripción del servicio" required value={item.description} onChange={(e)=>setItems(items.map((current,i)=>i===index?{...current,description:e.target.value}:current))}/>
+                <input aria-label={`Cantidad ${index+1}`} title="Cantidad de unidades o viajeros" type="number" min="1" required value={item.quantity} onChange={(e)=>setItems(items.map((current,i)=>i===index?{...current,quantity:Number(e.target.value)}:current))}/>
+                <input aria-label={`Precio ${index+1}`} title="Precio unitario en dólares" type="number" min="0" step="0.01" required value={item.unitPrice} onChange={(e)=>setItems(items.map((current,i)=>i===index?{...current,unitPrice:Number(e.target.value)}:current))}/>
+                <strong>{money.format(item.quantity*item.unitPrice)}</strong>
+                {items.length>1&&<button type="button" aria-label={`Eliminar partida ${index+1}`} onClick={()=>setItems(items.filter((_,i)=>i!==index))}>×</button>}
+              </div>)}
+              <div className="quote-total"><span>Subtotal</span><strong>{money.format(items.reduce((sum,item)=>sum+item.quantity*item.unitPrice,0))}</strong></div>
             </div>
+            <Field label="Impuestos (USD)" name="taxes" type="number" required />
             <Field
               label="Válida hasta"
               name="validUntil"
@@ -833,6 +1030,7 @@ function ModalForm({
                   </option>
                 ))}
               </select>
+              <FieldHint>Selecciona el viaje al que pertenece este cobro.</FieldHint>
             </label>
             <div className="form-grid">
               <Field label="Monto (USD)" name="amount" type="number" required />
@@ -858,6 +1056,7 @@ function ModalForm({
                   <option>Alta</option>
                   <option>Baja</option>
                 </select>
+                <FieldHint>Indica qué tan urgente es completar esta tarea.</FieldHint>
               </label>
             </div>
           </>
@@ -873,6 +1072,7 @@ function ModalForm({
                 <option>Email</option>
                 <option>WhatsApp</option>
               </select>
+              <FieldHint>Selecciona el medio o tipo de interacción realizada.</FieldHint>
             </label>
             <Field
               label="Detalle"
@@ -882,16 +1082,83 @@ function ModalForm({
             />
           </>
         )}
-        <div className="modal-actions">
+        {type === "editClient" && selectedClient && (
+          <>
+            <input type="hidden" name="clientId" value={selectedClient.id} />
+            <Field label="Nombre completo" name="name" required defaultValue={selectedClient.name} />
+            <div className="form-grid"><Field label="Teléfono" name="phone" defaultValue={selectedClient.phone} /><Field label="Email" name="email" type="email" defaultValue={selectedClient.email} /></div>
+            <div className="form-grid"><Field label="Destino de interés" name="destination" defaultValue={selectedClient.destination} /><label>Etapa<select name="status" defaultValue={selectedClient.status}><option>Nuevo</option><option>Cotización</option><option>Apartado</option><option>Confirmado</option></select><FieldHint>Actualiza el punto del proceso de venta.</FieldHint></label></div>
+          </>
+        )}
+        {type === "archiveClient" && selectedClient && (
+          <div className="archive-confirmation">
+            <input type="hidden" name="id" value={selectedClient.id} />
+            <strong>¿Archivar a {selectedClient.name}?</strong>
+            <p>El cliente dejará de aparecer en la lista activa. Su historial se conservará.</p>
+          </div>
+        )}
+        {type === "traveler" && (
+          <>
+            <ClientSelect clients={clients} />
+            <div className="form-grid">
+              <Field label="Nombre" name="firstName" required />
+              <Field label="Apellido" name="lastName" required />
+            </div>
+            <div className="form-grid">
+              <Field label="Fecha de nacimiento" name="birthDate" type="date" />
+              <Field label="Nacionalidad" name="nationality" />
+            </div>
+            <Field label="Preferencias o notas" name="notes" />
+          </>
+        )}
+        {type === "supplier" && (
+          <>
+            <Field label="Proveedor" name="name" required />
+            <div className="form-grid">
+              <label>Categoría<select name="category"><option>Hotel</option><option>Aerolínea</option><option>Tour operador</option><option>Crucero</option><option>Transporte</option><option>Seguro</option><option>Otro</option></select><FieldHint>Tipo principal de servicio que ofrece.</FieldHint></label>
+              <Field label="Contacto" name="contactName" />
+            </div>
+            <div className="form-grid"><Field label="Email" name="email" type="email" /><Field label="Teléfono" name="phone" /></div>
+            <Field label="Notas" name="notes" />
+          </>
+        )}
+        {type === "booking" && (
+          <>
+            <label>Viaje<select name="tripId" required>{trips.map((trip)=><option key={trip.id} value={trip.id}>{trip.client_name} — {trip.destination}</option>)}</select><FieldHint>Viaje al que pertenece esta reserva.</FieldHint></label>
+            <label>Proveedor<select name="supplierId" required>{suppliers.map((supplier)=><option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select><FieldHint>Empresa que prestará el servicio reservado.</FieldHint></label>
+            <div className="form-grid">
+              <label>Servicio<select name="serviceType"><option>Hotel</option><option>Vuelo</option><option>Tour</option><option>Crucero</option><option>Transporte</option><option>Seguro</option><option>Otro</option></select><FieldHint>Clase de servicio que estás reservando.</FieldHint></label>
+              <Field label="Confirmación" name="confirmation" />
+            </div>
+            <div className="form-grid"><Field label="Venta (USD)" name="saleAmount" type="number" required /><Field label="Costo (USD)" name="costAmount" type="number" required /></div>
+            <div className="form-grid"><Field label="Comisión (USD)" name="commissionAmount" type="number" required /><Field label="Fecha esperada" name="commissionDueDate" type="date" /></div>
+          </>
+        )}
+        {type === "convertQuote" && (
+          <>
+            <input type="hidden" name="quoteId" value={quoteId || ""} />
+            <p className="form-help">Las partidas y el total de la propuesta se conservarán en el nuevo viaje.</p>
+            <div className="form-grid"><Field label="Salida" name="startDate" type="date" required /><Field label="Regreso" name="endDate" type="date" required /></div>
+            <div className="form-grid"><Field label="Primer pago (opcional)" name="firstPaymentAmount" type="number" /><Field label="Vencimiento del pago" name="paymentDueDate" type="date" /></div>
+          </>
+        )}
+        {type === "member" && (
+          <>
+            <Field label="Nombre" name="displayName" />
+            <Field label="Email autorizado" name="email" type="email" required />
+            <label>Rol<select name="role"><option value="agent">Agente</option><option value="viewer">Solo lectura</option><option value="admin">Administrador</option></select><FieldHint>Define qué puede consultar o modificar este usuario.</FieldHint></label>
+          </>
+        )}
+        <div className="form-page-actions">
           <button type="button" className="secondary" onClick={close}>
             Cancelar
           </button>
           <button className="primary" disabled={saving}>
-            {saving ? "Guardando…" : "Guardar"}
+            {saving ? "Guardando…" : type === "archiveClient" ? "Archivar cliente" : "Guardar"}
           </button>
         </div>
       </form>
-    </div>
+    </section>
   );
 }
 function ClientSelect({
@@ -912,6 +1179,7 @@ function ClientSelect({
           </option>
         ))}
       </select>
+      <FieldHint>{optional ? "Elige un cliente o déjalo como tarea interna." : "Selecciona el cliente relacionado con este registro."}</FieldHint>
     </label>
   );
 }
@@ -921,13 +1189,17 @@ function Field({
   type = "text",
   required,
   placeholder,
+  defaultValue,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   placeholder?: string;
+  defaultValue?: string;
 }) {
+  const guidance = FIELD_GUIDANCE[name] || `Escribe ${label.toLowerCase()}.`;
+  const example = placeholder || FIELD_EXAMPLES[name];
   return (
     <label>
       {label}
@@ -935,8 +1207,71 @@ function Field({
         name={name}
         type={type}
         required={required}
-        placeholder={placeholder}
+        placeholder={example}
+        defaultValue={defaultValue}
       />
+      <FieldHint>{guidance}</FieldHint>
     </label>
   );
+}
+
+const FIELD_GUIDANCE: Record<string, string> = {
+  name: "Nombre completo del cliente o nombre comercial del proveedor.",
+  phone: "Número con código de área; incluye código de país si es internacional.",
+  email: "Correo donde la persona recibirá comunicaciones y propuestas.",
+  destination: "Ciudad, país, crucero o región que desea visitar.",
+  startDate: "Fecha programada de salida del viaje.",
+  endDate: "Fecha programada de regreso del viaje.",
+  total: "Valor total acordado del viaje, en dólares.",
+  travelers: "Cantidad total de personas incluidas en la propuesta.",
+  taxes: "Total de impuestos y cargos adicionales; escribe 0 si no aplica.",
+  validUntil: "Último día en que el cliente puede aceptar esta cotización.",
+  notes: "Información útil, preferencias, condiciones o detalles adicionales.",
+  amount: "Cantidad de este cobro o pago, en dólares.",
+  dueDate: "Fecha límite para completar la tarea o recibir el pago.",
+  note: "Describe a qué corresponde este pago.",
+  title: "Acción concreta que debe realizarse.",
+  detail: "Resume lo hablado y deja claro el próximo paso.",
+  firstName: "Nombre del viajero tal como aparece en su documento.",
+  lastName: "Apellido del viajero tal como aparece en su documento.",
+  birthDate: "Fecha de nacimiento del viajero.",
+  nationality: "País de ciudadanía o nacionalidad del viajero.",
+  contactName: "Persona de contacto dentro de la empresa proveedora.",
+  confirmation: "Código o localizador entregado por el proveedor.",
+  saleAmount: "Precio cobrado al cliente por este servicio.",
+  costAmount: "Costo que la agencia pagará al proveedor.",
+  commissionAmount: "Ganancia o comisión esperada para la agencia.",
+  commissionDueDate: "Fecha estimada en que recibirás la comisión.",
+  firstPaymentAmount: "Importe del primer pago; déjalo vacío si aún no se cobrará.",
+  paymentDueDate: "Fecha límite del primer pago.",
+  displayName: "Nombre que aparecerá dentro del CRM para este usuario.",
+};
+
+const FIELD_EXAMPLES: Record<string, string> = {
+  name: "Ej. María González",
+  phone: "Ej. +1 713 555 0184",
+  email: "Ej. maria@correo.com",
+  destination: "Ej. Cancún, México",
+  total: "Ej. 3850.00",
+  travelers: "Ej. 2",
+  taxes: "Ej. 245.00",
+  notes: "Ej. Prefiere habitación con vista al mar",
+  amount: "Ej. 750.00",
+  note: "Ej. Segundo pago del paquete",
+  title: "Ej. Confirmar disponibilidad del hotel",
+  detail: "Ej. Cliente aprobó el hotel; llamar mañana para cobrar",
+  firstName: "Ej. María",
+  lastName: "Ej. González",
+  nationality: "Ej. Estadounidense",
+  contactName: "Ej. Ana Pérez",
+  confirmation: "Ej. HTL-847291",
+  saleAmount: "Ej. 1200.00",
+  costAmount: "Ej. 950.00",
+  commissionAmount: "Ej. 250.00",
+  firstPaymentAmount: "Ej. 500.00",
+  displayName: "Ej. Carlos Rivera",
+};
+
+function FieldHint({ children }: { children: ReactNode }) {
+  return <small className="field-hint">{children}</small>;
 }

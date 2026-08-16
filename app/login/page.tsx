@@ -1,2 +1,5 @@
-import Link from "next/link";
-export default function Login(){return <main className="login-page"><section className="login-story"><Link className="marketing-brand light" href="/"><span>R</span><div><strong>Rumbo</strong><small>TRAVEL CRM</small></div></Link><div><p>CLIENTES · VIAJES · PAGOS</p><h1>Tu agencia empieza el día con claridad.</h1><span>Todo el seguimiento comercial y operativo, en un solo lugar.</span></div><small>Houston, Texas</small></section><section className="login-card"><div><p className="landing-kicker"><span/>PORTAL SEGURO</p><h2>Bienvenido de nuevo</h2><p>Rumbo utiliza Cloudflare Access. Recibirás un código temporal en el correo autorizado; no necesitas crear ni recordar otra contraseña.</p><div className="security-box"><strong>Acceso protegido</strong><span>✓ Código de un solo uso</span><span>✓ Sesión segura de 12 horas</span><span>✓ Solo usuarios autorizados</span></div><Link href="/admin/">Continuar con acceso seguro →</Link><small>Actualmente autorizado: cuenta administradora de Rumbo CRM.</small></div></section></main>}
+import { redirect } from "next/navigation";
+
+export default function Login() {
+  redirect("/acceso/");
+}

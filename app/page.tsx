@@ -21,23 +21,24 @@ export default function Home() {
     <div className="marketing">
       <header className="marketing-nav">
         <Link className="marketing-brand" href="/">
-          <span>R</span>
+          <span>T</span>
           <div>
-            <strong>Rumbo</strong>
-            <small>TRAVEL CRM</small>
+            <strong>TravelClientPro</strong>
+            <small>TRAVEL BUSINESS PLATFORM</small>
           </div>
         </Link>
         <nav>
           <a href="#producto">Producto</a>
           <a href="#beneficios">Beneficios</a>
           <a href="#precio">Precio</a>
+          <Link href="/dashboard/">Demo</Link>
         </nav>
         <div>
-          <Link className="nav-login" href="/admin/">
+          <Link className="nav-login" href="/acceso/">
             Entrar a mi CRM
           </Link>
-          <Link className="nav-cta" href="/dashboard/">
-            Ver demo
+          <Link className="nav-cta" href="/registro/">
+            Probar gratis
           </Link>
         </div>
       </header>
@@ -54,16 +55,16 @@ export default function Home() {
               <em>Menos cosas olvidadas.</em>
             </h1>
             <p className="hero-lead">
-              Rumbo reúne clientes, cotizaciones, pagos y seguimientos en un CRM
-              sencillo que tu agencia sí querrá usar.
+              TravelClientPro reúne clientes, cotizaciones, pagos y seguimientos
+              en una plataforma sencilla que tu agencia sí querrá usar.
             </p>
             <div className="hero-buttons">
-              <Link className="landing-primary" href="/dashboard/">
-                Probar la demo <b>→</b>
+              <Link className="landing-primary" href="/registro/">
+                Crear prueba real <b>→</b>
               </Link>
-              <a className="landing-secondary" href="#producto">
-                Conocer el producto
-              </a>
+              <Link className="landing-secondary" href="/dashboard/">
+                Explorar la demo
+              </Link>
             </div>
             <div className="trust-row">
               <span>✓ Sin instalación</span>
@@ -73,7 +74,7 @@ export default function Home() {
           </div>
           <div className="product-preview" id="producto">
             <div className="preview-bar">
-              <div className="preview-logo">R</div>
+              <div className="preview-logo">T</div>
               <span>Resumen de hoy</span>
               <i />
               <i />
@@ -194,12 +195,11 @@ export default function Home() {
             <p>EMPIEZA SIMPLE</p>
             <h2>Todo lo necesario para organizar tu agencia.</h2>
             <span>
-              La versión inicial está abierta como demostración mientras
-              terminamos cuentas de usuario, seguridad y automatizaciones.
+              Crea una cuenta real, confirma tu correo y prueba tu propia agencia durante 14 días.
             </span>
           </div>
           <article>
-            <small>ACCESO DE DEMOSTRACIÓN</small>
+            <small>PRUEBA REAL DE 14 DÍAS</small>
             <h3>
               $0 <span>/ durante desarrollo</span>
             </h3>
@@ -209,34 +209,36 @@ export default function Home() {
               <li>✓ Viajes, pagos y tareas</li>
               <li>✓ Reportes comerciales</li>
             </ul>
-            <Link href="/dashboard/">Abrir la demo →</Link>
+            <Link href="/registro/">Crear mi prueba →</Link>
           </article>
         </section>
         <section className="final-cta">
-          <span className="brand-orbit">R</span>
+          <span className="brand-orbit">T</span>
           <p>EL PRÓXIMO VIAJE COMIENZA AQUÍ</p>
           <h2>
             Haz crecer tu agencia
             <br />
-            sin perder el rumbo.
+            con cada cliente bajo control.
           </h2>
-          <Link href="/dashboard/">
-            Explorar el CRM <b>→</b>
+          <Link href="/registro/">
+            Comenzar mi prueba <b>→</b>
           </Link>
         </section>
       </main>
       <footer className="marketing-footer">
         <div className="marketing-brand">
-          <span>R</span>
+          <span>T</span>
           <div>
-            <strong>Rumbo</strong>
-            <small>TRAVEL CRM</small>
+            <strong>TravelClientPro</strong>
+            <small>TRAVEL BUSINESS PLATFORM</small>
           </div>
         </div>
         <p>Software de gestión para agencias de viajes · Houston, Texas</p>
         <div>
           <a href="#producto">Producto</a>
-          <Link href="/admin/">Entrar a mi CRM</Link>
+          <Link href="/dashboard/">Demo</Link>
+          <Link href="/acceso/">Entrar a mi cuenta</Link>
+          <a className="admin-entry" href="/admin/control/">Acceso administrativo</a>
         </div>
       </footer>
     </div>

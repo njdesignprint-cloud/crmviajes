@@ -1,6 +1,7 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { runDailyAutomations } from "../app/daily-automations";
 
 interface Env {
   ASSETS: Fetcher;
@@ -29,6 +30,11 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.hostname === "www.travelclientpro.com") {
+      url.hostname = "travelclientpro.com";
+      return Response.redirect(url.toString(), 308);
+    }
+
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return handleImageOptimization(request, {
@@ -41,6 +47,9 @@ const worker = {
     }
 
     return handler.fetch(request, env, ctx);
+  },
+  scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(runDailyAutomations(env.DB, new Date(controller.scheduledTime)));
   },
 };
 

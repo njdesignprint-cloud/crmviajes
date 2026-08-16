@@ -1,2 +1,7 @@
 import { CrmDashboard } from "../crm-dashboard";
-export default function Admin(){return <CrmDashboard/>}
+
+export const dynamic = "force-dynamic";
+
+export default function Admin() {
+  return <CrmDashboard />;
+}
