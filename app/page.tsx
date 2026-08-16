@@ -237,6 +237,7 @@ export default function Home() {
         <div>
           <a href="#producto">Producto</a>
           <Link href="/dashboard/">Demo</Link>
+          <a href="/Manual-de-Usuario-TravelClientPro.pdf" target="_blank" rel="noreferrer">Manual de usuario</a>
           <Link href="/acceso/">Entrar a mi cuenta</Link>
           <a className="admin-entry" href="/admin/control/">Acceso administrativo</a>
         </div>

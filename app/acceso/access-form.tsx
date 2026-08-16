@@ -61,7 +61,7 @@ export function AccessForm() {
         <section className="registration-form-panel access-form-panel">
           <div className="registration-mobile-brand"><span>T</span><strong>TravelClientPro</strong></div>
           <div className="access-lock">{sent ? "✉" : "◇"}</div>
-          <p className="registration-kicker">PORTAL DE CLIENTES</p>
+          <p className="registration-kicker">ACCESO A TU AGENCIA</p>
           <h2>{sent ? "Escribe tu código" : "Bienvenido de nuevo"}</h2>
           <p className="registration-intro">
             {sent ? <>Enviamos un código de seis números a <strong>{email}</strong>.</> : "Recibirás un código temporal en tu correo. No necesitas contraseña."}
